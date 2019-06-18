@@ -7,7 +7,7 @@ Instructions:
 
 1) Install python modules
 ```
-pip3 -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 2) Set environment variables with your Nicehash API ID and KEY:
