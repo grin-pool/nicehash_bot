@@ -37,7 +37,7 @@ PRICE_ADJUST_RATE = "fast"
 
 if PRICE_ADJUST_RATE == "slow":
     MAX_INCREASE = 0.0001   # Maximum amount to increase at once
-    TARGET_MIN_ADD = 0.0001 # Amount to set order price over the absolute minimum 
+    TARGET_MIN_ADD = 0.0000 # Amount to set order price over the absolute minimum 
     LOOP_INTERVAL = 120     # Sleep this long between control loop runs
 elif PRICE_ADJUST_RATE == "medium":
     MAX_INCREASE = 0.0002   # Maximum amount to increase at once
@@ -45,7 +45,7 @@ elif PRICE_ADJUST_RATE == "medium":
     LOOP_INTERVAL = 60      # Sleep this long between control loop runs
 elif PRICE_ADJUST_RATE == "fast":
     MAX_INCREASE = 0.0005   # Maximum amount to increase at once
-    TARGET_MIN_ADD = 0.0002 # Amount to set order price over the absolute minimum 
+    TARGET_MIN_ADD = 0.0001 # Amount to set order price over the absolute minimum 
     LOOP_INTERVAL = 15      # Sleep this long between control loop runs
 
 
@@ -88,6 +88,7 @@ def call_nicehash_api(method, args):
     for arg, val in args.items():
         url +=  "&{}={}".format(arg, val)
           
+    time.sleep(5)
     r = requests.get(
             url=url,
         )
@@ -102,7 +103,6 @@ def call_nicehash_api(method, args):
         method = r_json["method"]
         error_msg = "Error calling {}. Reason: {}".format(method, message)
         raise Exception(error_msg)
-    time.sleep(10)
     return result
 
 
@@ -123,7 +123,7 @@ except Exception as e:
     sys.exit(1)
 
 while True:
-    # Get all orders
+    # Get all current orders
     current_orders = {}
     for location in LOCATIONS.values():
         for algo in ALGOS.values():
@@ -158,11 +158,11 @@ while True:
     # Update existing orders
     for order_id in current_orders.keys():
         if order_id in orders:
-            current_orders[order_id]["limit_speed"] = float(current_orders[order_id]["limit_speed"])
-            current_orders[order_id]["alive"] = current_orders[order_id]["alive"]
-            current_orders[order_id]["price"] = float(current_orders[order_id]["price"])
-            current_orders[order_id]["workers"] = int(current_orders[order_id]["workers"])
-            current_orders[order_id]["accepted_speed"] = float(current_orders[order_id]["accepted_speed"])
+            orders[order_id]["limit_speed"] = float(current_orders[order_id]["limit_speed"])
+            orders[order_id]["alive"] = current_orders[order_id]["alive"]
+            orders[order_id]["price"] = float(current_orders[order_id]["price"])
+            orders[order_id]["workers"] = int(current_orders[order_id]["workers"])
+            orders[order_id]["accepted_speed"] = float(current_orders[order_id]["accepted_speed"])
 #    Debug, print current orders
 #    print("My Orders:")
 #    pp.pprint(orders)          
@@ -240,11 +240,11 @@ while True:
                 "price": increase_to,
                 }
             try:
-                print("xxx: Setting price for {} to {}".format(order_id, increase_to))
+#                print("xxx: Setting price for {} to {}".format(order_id, increase_to))
                 result = call_nicehash_api("orders.set.price", increasePrice_args)
-                print("xxx: delta: order[\"price\"] = {}, increase_to = {}".format(order["price"], increase_to))
-                orders[order_id]["change"] = "+{}".format(round(increase_to - order["price"]), 4)
-                orders[order_id]["last_decreased"] = datetime(1970, 1, 1)
+#                print("xxx: delta: order[\"price\"] = {}, increase_to = {}, delta = {}".format(order["price"], increase_to, order["delta"]))
+                orders[order_id]["change"] = increase_to - order["price"]
+                # Should be possible, but isnt: orders[order_id]["last_decreased"] = datetime(1970, 1, 1)
             except Exception as e:
                 orders[order_id]["change"] = "None: error: {}".format(str(e))
         else:
